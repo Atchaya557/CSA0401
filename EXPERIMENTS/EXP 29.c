@@ -1,0 +1,86 @@
+#include <stdio.h>
+#include <pthread.h>
+#include <semaphore.h>
+#include <unistd.h>
+
+sem_t empty, full;
+pthread_mutex_t mutex;
+
+int buffer = 0;
+
+void *producer(void *arg)
+{
+    for (int i = 1; i <= 5; i++)
+    {
+        sem_wait(&empty);
+
+        pthread_mutex_lock(&mutex);
+
+        buffer = i;
+        printf("Produced: %d\n", buffer);
+
+        pthread_mutex_unlock(&mutex);
+
+        sem_post(&full);
+
+        sleep(1);
+    }
+
+    return NULL;
+}
+
+void *consumer(void *arg)
+{
+    for (int i = 1; i <= 5; i++)
+    {
+        sem_wait(&full);
+
+        pthread_mutex_lock(&mutex);
+
+        printf("Consumed: %d\n", buffer);
+
+        pthread_mutex_unlock(&mutex);
+
+        sem_post(&empty);
+
+        sleep(1);
+    }
+
+    return NULL;
+}
+
+int main()
+{
+    pthread_t p, c;
+
+    sem_init(&empty, 0, 1);
+    sem_init(&full, 0, 0);
+
+    pthread_mutex_init(&mutex, NULL);
+
+    pthread_create(&p, NULL, producer, NULL);
+    pthread_create(&c, NULL, consumer, NULL);
+
+    pthread_join(p, NULL);
+    pthread_join(c, NULL);
+
+    sem_destroy(&empty);
+    sem_destroy(&full);
+
+    pthread_mutex_destroy(&mutex);
+
+    return 0;
+}
+
+OUTPUT:
+
+Produced: 1
+Consumed: 1
+Produced: 2
+Consumed: 2
+Produced: 3
+Consumed: 3
+Produced: 4
+Consumed: 4
+Produced: 5
+Consumed: 5
